@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "us-east-2"
+  region = var.aws_region
 }
 
 resource "aws_vpc" "main" {
@@ -7,13 +7,11 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.0.0/17"
-}
+  for_each = var.public_subnets
 
-resource "aws_subnet" "private" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.128.0/17"
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = each.value.cidr_block
+  availability_zone = each.value.availability_zone
 }
 
 resource "aws_internet_gateway" "main" {
@@ -30,11 +28,8 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
-}
+  for_each = aws_subnet.public
 
-resource "aws_route_table_association" "private" {
-  subnet_id      = aws_subnet.private.id
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public.id
 }
